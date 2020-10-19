@@ -621,3 +621,451 @@ class Solution {
 }
 ```
 
+## 224. [基本计算器](https://leetcode-cn.com/problems/basic-calculator/)
+
+实现一个基本的计算器来计算一个简单的字符串表达式的值。
+
+字符串表达式可以包含左括号 ( ，右括号 )，加号 + ，减号 -，非负整数和空格  
+
+示例 1:
+
+```
+输入: "1 + 1"
+输出: 2
+```
+
+
+示例 2:
+
+```
+输入: " 2-1 + 2 "
+输出: 3
+```
+
+
+示例 3:
+
+```
+输入: "(1+(4+5+2)-3)+(6+8)"
+输出: 23
+```
+
+
+说明：
+
+- 你可以假设所给定的表达式都是有效的。
+
+- 请不要使用内置的库函数 eval。
+
+### 思路一
+
+```
+自己思路是使用两个栈，一个存符号一个数字进行计算，但是考虑少了一个细节，就是减号并不能做到 (a - b) +c 与 a -(b+c)相等；所以代码更改一下：
+
+1. 使用两个栈，stack_int用于存储操作数，stack_str用于存储操作符
+2. 从左往右扫描，遇到操作数就入栈
+3. 遇到操作符的时候，如果当前的优先级低于或者等于栈顶操作符优先级，则stack_int弹出两个元素，从stack1弹出一个操作符，进行计算，结果继续压入栈中，
+4. 如果遇到高级的操作符，直接入栈
+5. 遇到左括号就入栈
+6. 遇到右括号，一直计算，直到遇到左括号。
+```
+
+### 代码
+
+```java
+class Solution {
+    public int calculate(String s) {
+    char[] array = s.toCharArray();
+    int n = array.length;
+    Stack<Integer> num = new Stack<>();
+    Stack<Character> op = new Stack<>();
+    int temp = -1;
+    for (int i = 0; i < n; i++) {
+        if (array[i] == ' ') {
+            continue;
+        }
+        // 数字进行累加
+        if (isNumber(array[i])) {
+            if (temp == -1) {
+                temp = array[i] - '0';
+            } else {
+                temp = temp * 10 + array[i] - '0';
+            }
+        } else {
+            //将数字入栈
+            if (temp != -1) {
+                num.push(temp);
+                temp = -1;
+            }
+            //遇到操作符
+            if (isOperation(array[i] + "")) {
+                while (!op.isEmpty()) {
+                    if (op.peek() == '(') {
+                        break;
+                    }
+                    //不停的出栈，进行运算，并将结果再次压入栈中
+                    int num1 = num.pop();
+                    int num2 = num.pop();
+                    if (op.pop() == '+') {
+                        num.push(num1 + num2);
+                    } else {
+                        num.push(num2 - num1);
+                    }
+
+                }
+                //当前运算符入栈
+                op.push(array[i]);
+            } else {
+                //遇到左括号，直接入栈
+                if (array[i] == '(') {
+                    op.push(array[i]);
+                }
+                //遇到右括号，不停的进行运算，直到遇到左括号
+                if (array[i] == ')') {
+                    while (op.peek() != '(') {
+                        int num1 = num.pop();
+                        int num2 = num.pop();
+                        if (op.pop() == '+') {
+                            num.push(num1 + num2);
+                        } else {
+                            num.push(num2 - num1);
+                        }
+                    }
+                    op.pop();
+                }
+
+            }
+        }
+    }
+    if (temp != -1) {
+        num.push(temp);
+    }
+    //将栈中的其他元素继续运算
+    while (!op.isEmpty()) {
+        int num1 = num.pop();
+        int num2 = num.pop();
+        if (op.pop() == '+') {
+            num.push(num1 + num2);
+        } else {
+            num.push(num2 - num1);
+        }
+    }
+    return num.pop();
+}
+
+private boolean isNumber(char c) {
+    return c >= '0' && c <= '9';
+}
+
+private boolean isOperation(String t) {
+    return t.equals("+") || t.equals("-") || t.equals("*") || t.equals("/");
+}
+
+}
+```
+
+### 代码二递归
+
+```java
+class Solution {
+    public static int calculate(String s) {
+        return dfs(s, 0)[0];
+    }
+
+    public static int[] dfs(String s, int index) {
+        Stack<Integer> stk = new Stack<>();
+        char[] arr = s.toCharArray();
+        char lastop = '+';
+
+        for(int i = index; i < arr.length; i++){
+            if(arr[i] == ' ') continue;
+
+
+            if(Character.isDigit(arr[i])){
+                int tempNum = 0;
+                while(i < arr.length && Character.isDigit(arr[i])){
+                    tempNum = tempNum * 10 + (arr[i] - '0');
+                    i++;
+                }i--;
+                if (lastop == '+') stk.push(tempNum);
+                else if(lastop == '-') stk.push(-tempNum);
+                
+            }else if(arr[i] == '+'|| arr[i] == '-'|| arr[i] == '*'|| arr[i] == '/'){
+                lastop = arr[i];
+            }else if(arr[i] == '('){
+                int[] result = dfs(s, i+1);
+                int tempNum = result[0];
+                i = result[1];
+                if (lastop == '+') stk.push(tempNum);
+                else if(lastop == '-') stk.push(-tempNum);
+            }else if (arr[i] == ')'){
+                index = i;
+                break;
+            }
+        }
+        int res = 0;
+        for(int number : stk) res += number;
+        return new int[] {res, index};
+    }
+}
+```
+
+## 227 [ 基本计算器 II](https://leetcode-cn.com/problems/basic-calculator-ii/)
+
+实现一个基本的计算器来计算一个简单的字符串表达式的值。
+
+字符串表达式仅包含非负整数，+， - ，*，/ 四种运算符和空格  。 整数除法仅保留整数部分。
+
+示例 1:
+
+```
+输入: "3+2*2"
+输出: 7
+```
+
+
+示例 2:
+
+```
+输入: " 3/2 "
+输出: 1
+```
+
+
+示例 3:
+
+```
+输入: " 3+5 / 2 "
+输出: 5
+```
+
+
+说明：
+
+你可以假设所给定的表达式都是有效的。
+请不要使用内置的库函数 eval。
+
+### 代码
+
+```
+class Solution {
+    
+ public int calculate(String s) {
+        Stack<Integer> numStack = new Stack<>();
+
+        char lastOp = '+';
+        char[] arr = s.toCharArray();
+        for(int i = 0; i < arr.length; i ++){
+            if(arr[i] == ' ') continue;
+
+            if(Character.isDigit(arr[i])){
+                int tempNum = arr[i] - '0';
+                while(++i < arr.length && Character.isDigit(arr[i])){
+                    tempNum = tempNum * 10 + (arr[i] - '0');
+                } i--;
+
+                if(lastOp == '+') numStack.push(tempNum);
+                else if(lastOp == '-') numStack.push(-tempNum);
+                else numStack.push(res(lastOp, numStack.pop(), tempNum));
+            } else lastOp = arr[i];
+        }
+
+        int ans = 0;
+        for(int num : numStack) ans += num;
+        return ans;
+    }
+    
+    private int res(char op, int a, int b){
+        if(op == '*') return a * b;
+        else if(op == '/') return a / b;
+        else if(op == '+') return a + b; //其实加减运算可以忽略
+        else return a - b;
+    }
+
+}
+```
+
+![image-20201019231411006](C:\Users\Auraros\AppData\Roaming\Typora\typora-user-images\image-20201019231411006.png)
+
+## 总结一下：计算器的最终实现
+
+我们最终要实现的计算器功能如下：
+
+1. 输入与一个字符串，可以包含 + -  * /、数字、空格以及括号，算法返回结果。
+2. 要符合运算规则，括号的优先级最高，先乘除然后加减。
+3. 除号是整数除法，无论正负都向0取整（5/2=2， -5/2=-2）。
+4. 可以假定输入的算式一定合法，且计算过程不会出现整型溢出，不会出现除数为 0 的意外情况。
+
+比如输入如下字符串，会返回 9 ：
+$$
+3 * (2-6 /(3 -7))
+$$
+
+### 字符串化整数
+
+```java
+String s = "458";
+char[] arr = s.toCharArray();
+int n = 0;
+for (int i = 0; i < arr.length; i++) {
+    if(Character.isDigit(arr[i])){
+    	char c = s[i];
+   	 	n = 10 * n + (c - '0');
+    }
+}
+```
+
+### 处理加减号
+
+第二步，如果输入的算式只包含了加减法，而且不存在空格，那怎么计算。
+$$
+1-12+3
+$$
+
+- 先给第一个数组加一个默认符号 + ， 变成了 +1 -12 + 3
+- 把一个运算符和数组组合成一对儿，也就是三个 +1， -12， +3 ,把它们转化为数字，然后放到一个栈中。
+- 将栈中的数字所有求和
+
+```java
+public int calculate(String s){
+	Stack<Integer> stk = new Stack<>();
+    char[] arr = s.toCharArray();
+    char lastop = '+';
+
+    for(int i = 0; i < arr.length; i++){
+        if(arr[i] == ' ') continue;
+        if(Character.isDigit(arr[i])){
+            int tempNum = 0;
+            while(i < arr.length && Character.isDigit(arr[i])){
+                tempNum = tempNum * 10 + (arr[i] - '0');
+                i++;
+            }i--;
+            if (lastop == '+') stk.push(tempNum);
+            else stk.push(-tempNum);
+        }else lastop = arr[i];
+    }
+    int res = 0;
+    for(int number : stk) res += number;
+    return res; 
+}
+```
+
+### 处理乘除法
+
+思路和处理加减法没什么区别：
+$$
+2-3*4/5+5
+$$
+可以分解为 +2， -3， *4， /5， +5
+
+然后只需要在处理加减号那里在添加乘除的处理即可
+
+```java
+    public static int calculate(String s) {
+        Stack<Integer> stk = new Stack<>();
+        char[] arr = s.toCharArray();
+        char lastop = '+';
+
+        for(int i = 0; i < arr.length; i++){
+            if(arr[i] == ' ') continue;
+
+
+
+            if(Character.isDigit(arr[i])){
+                int tempNum = 0;
+                while(i < arr.length && Character.isDigit(arr[i])){
+                    tempNum = tempNum * 10 + (arr[i] - '0');
+                    i++;
+                }i--;
+                if (lastop == '+') stk.push(tempNum);
+                else if(lastop == '-') stk.push(-tempNum);
+                else stk.push(res(lastop, stk.pop(), tempNum));
+            }else lastop = arr[i];
+        }
+        int res = 0;
+        for(int number : stk) res += number;
+        return res;
+    }
+
+    public static int res(char op, int a, int b){
+        if(op == '*') return a * b;
+        else if(op == '/') return a / b;
+        else if(op == '+') return a + b; //其实加减运算可以忽略
+        else return a - b;
+   }
+}
+```
+
+### 处理括号
+
+递归的话实际并不难，看看下面例子：
+$$
+calculate(3*(4-5/2)-6)
+$$
+
+$$
+= 3 * calculate(4-5/2)-6
+$$
+
+$$
+= 3 * 2 - 6
+$$
+
+使用递归即可：
+
+- 递归开始条件为 ` (`
+
+- 递归结束条件为  `)`
+
+```
+    public static int calculate(String s) {
+        return dfs(s, 0)[0];
+    }
+
+    public static int[] dfs(String s, int index) {
+        Stack<Integer> stk = new Stack<>();
+        char[] arr = s.toCharArray();
+        char lastop = '+';
+
+        for(int i = index; i < arr.length; i++){
+            if(arr[i] == ' ') continue;
+
+
+            if(Character.isDigit(arr[i])){
+                int tempNum = 0;
+                while(i < arr.length && Character.isDigit(arr[i])){
+                    tempNum = tempNum * 10 + (arr[i] - '0');
+                    i++;
+                }i--;
+                if (lastop == '+') stk.push(tempNum);
+                else if(lastop == '-') stk.push(-tempNum);
+                else stk.push(res(lastop, stk.pop(), tempNum));
+            }else if(arr[i] == '+'|| arr[i] == '-'|| arr[i] == '*'|| arr[i] == '/'){
+                lastop = arr[i];
+            }else if(arr[i] == '('){
+                int[] result = dfs(s, i+1);
+                int tempNum = result[0];
+                i = result[1];
+                if (lastop == '+') stk.push(tempNum);
+                else if(lastop == '-') stk.push(-tempNum);
+                else stk.push(res(lastop, stk.pop(), tempNum));
+            }else if (arr[i] == ')'){
+                index = i;
+                break;
+            }
+        }
+        int res = 0;
+        for(int number : stk) res += number;
+        return new int[] {res, index};
+    }
+
+
+
+    public static int res(char op, int a, int b){
+        if(op == '*') return a * b;
+        else if(op == '/') return a / b;
+        else if(op == '+') return a + b; //其实加减运算可以忽略
+        else return a - b;
+}
+```
+
